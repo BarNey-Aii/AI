@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Figma → PPTX</title>
+<meta name="description" content="Převod Figma snímků do editovatelného PowerPointu se všemi barvami a gradienty.">
+<style>
+:root { --bg:#f5f5f7; --card:#ffffff; --text:#1d1d22; --muted:#6b6b76; --line:rgba(120,120,135,.3);
+  --accent:#5b4bff; --accent-text:#fff; --err:#c62828; --err-bg:rgba(198,40,40,.08); --ok:#1b7f3b; --warn-bg:rgba(230,160,0,.12); }
+@media (prefers-color-scheme: dark) { :root { --bg:#131317; --card:#1e1e24; --text:#ececf1; --muted:#9b9ba7;
+  --line:rgba(160,160,175,.28); --err:#ff6b6b; --err-bg:rgba(255,107,107,.1); --ok:#5fd38d; } }
+* { box-sizing:border-box; }
+body { margin:0; font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); }
+main { max-width:640px; margin:0 auto; padding:40px 16px 64px; }
+.card { background:var(--card); border-radius:16px; padding:28px; box-shadow:0 2px 18px rgba(0,0,0,.06); }
+h1 { margin:0 0 4px; font-size:26px; letter-spacing:-.01em; }
+.sub { margin:0 0 22px; color:var(--muted); }
+label { display:block; font-weight:600; margin:18px 0 6px; }
+input[type=text], input[type=password], select { width:100%; padding:11px 12px; border-radius:9px; border:1px solid var(--line);
+  background:transparent; color:inherit; font:inherit; }
+input:focus, select:focus { outline:2px solid var(--accent); outline-offset:1px; }
+.check { display:flex; gap:10px; align-items:flex-start; margin-top:12px; }
+.check input { margin-top:4px; } .check label { margin:0; font-weight:400; }
+small { color:var(--muted); display:block; margin-top:4px; }
+button { margin-top:24px; width:100%; padding:13px; border:0; border-radius:10px; background:var(--accent); color:var(--accent-text);
+  font:600 16px system-ui,sans-serif; cursor:pointer; }
+button:disabled { opacity:.6; cursor:progress; }
+#status { margin-top:16px; min-height:1.5em; color:var(--muted); }
+#status.ok { color:var(--ok); }
+.msg { padding:12px 14px; border-radius:9px; margin-top:16px; white-space:pre-wrap; }
+.msg.err { color:var(--err); background:var(--err-bg); }
+.msg.warn { background:var(--warn-bg); }
+details { margin-top:22px; color:var(--muted); } summary { cursor:pointer; }
+a { color:var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <h1>Figma → PPTX</h1>
+    <p class="sub">Vložte odkaz na snímek nebo rámec ve Figmě. Vznikne editovatelný soubor pro PowerPoint i Google Slides – barvy, gradienty, texty, obrázky a vektory zůstanou zachované.</p>
+
+    <form id="form">
+      <label for="url">Odkaz na Figma</label>
+      <input id="url" type="text" required placeholder="https://www.figma.com/design/KEY/Nazev?node-id=1-2" autocomplete="off">
+      <small>Ve Figmě: pravé tlačítko na snímku → Copy/Paste as → Copy link to selection.</small>
+
+      <label for="token">Figma Personal Access Token</label>
+      <input id="token" type="password" required placeholder="figd_…" autocomplete="off">
+      <small>Figma → Settings → Security → Personal access tokens (File content: Read). Token jde přes vaši Netlify funkci jen do Figma API a nikde se neukládá (pokud nezaškrtnete „Zapamatovat“, kdy zůstane jen v tomto prohlížeči).</small>
+      <div class="check"><input id="remember" type="checkbox"><label for="remember">Zapamatovat token v tomto prohlížeči</label></div>
+
+      <label for="width">Velikost snímku</label>
+      <select id="width">
+        <option value="">Přesně podle Figmy (1 px = 1/96 palce)</option>
+        <option value="13.333">PowerPoint 16:9 (13,33 palce)</option>
+        <option value="10">Google Slides 16:9 (10 palců)</option>
+      </select>
+
+      <div class="check"><input id="raster" type="checkbox"><label for="raster">Gradienty jako přesný obrázek ve výplni tvaru (nejvěrnější v Google Slides)</label></div>
+      <div class="check"><input id="weights" type="checkbox"><label for="weights">Řezy písma v názvu fontu (např. „Inter SemiBold“)</label></div>
+      <div class="check"><input id="allpages" type="checkbox"><label for="allpages">Bez node-id převést všechny stránky souboru</label></div>
+
+      <button id="go" type="submit">Převést a stáhnout PPTX</button>
+    </form>
+    <div id="status" role="status" aria-live="polite"></div>
+    <div id="messages"></div>
+
+    <details>
+      <summary>Co se převádí a omezení</summary>
+      <p>Rámce → snímky, výplň rámce → pozadí. Tvary, vektory, čáry, texty (font, řez, barvy po znacích, prostrkání, výška řádku), obrázkové výplně, okraje, stíny. Lineární a radiální gradienty jako nativní gradienty, úhlové a diamantové jako přesný obrázek ve výplni.</p>
+      <p>PPTX nemá masky, blend módy ani rozmazání – masky se vykreslí jako obrázek, rozmazání se vynechá. Fonty musí být nainstalované.</p>
+    </details>
+  </div>
+</main>
+<script src="vendor/jszip.min.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>

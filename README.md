@@ -4,7 +4,35 @@ Nástroj stáhne snímek/rámec z Figmy přes oficiální REST API a postaví z 
 PowerPoint objekty** (tvary, textová pole, obrázky, skupiny) – ne obrázek celé stránky.
 Výsledný `.pptx` jde upravovat v PowerPointu, Keynote i po importu do Google Slides.
 
-## Instalace
+## Webová verze na Netlify (doporučeno)
+
+Celý převod běží **v prohlížeči** (JavaScript, `web/`). Netlify funkce
+`netlify/functions/figma.mjs` je jen proxy na Figma API (prohlížeč ho kvůli CORS nemůže volat
+přímo). Nic se neinstaluje, žádný Python na serveru.
+
+### Nasazení
+1. Na [app.netlify.com](https://app.netlify.com) zvolte **Add new site → Import an existing project → GitHub**
+   a vyberte tento repozitář a větev.
+2. Nastavení buildu se načte z `netlify.toml` (publish `web`, functions `netlify/functions`,
+   bez build příkazu) – stačí **Deploy**.
+3. Otevřete adresu webu, vložte Figma odkaz a token → stáhne se `.pptx`.
+
+Alternativně z příkazové řádky: `npm i -g netlify-cli && netlify deploy --prod`
+(v kořeni repozitáře).
+
+Lokální spuštění webové verze: `netlify dev` → http://localhost:8888
+
+### Testy webové verze
+```bash
+npm install
+npm test
+```
+
+## Python verze (příkazová řádka)
+
+Stejný převodník v Pythonu – vhodný pro dávkové převody bez prohlížeče.
+
+### Instalace
 
 ```bash
 pip install -r requirements.txt        # nebo: pip install .
@@ -17,9 +45,9 @@ Personal access tokens → scope *File content: Read*.
 export FIGMA_TOKEN=figd_xxx
 ```
 
-## Použití
+### Použití
 
-### Příkazová řádka
+#### Příkazová řádka
 
 ```bash
 # jeden snímek / rámec (odkaz zkopírovaný přes "Copy link to selection")
@@ -38,7 +66,7 @@ python -m figma2pptx "https://www.figma.com/slides/KEY/Deck" -o deck.pptx
 | `--all-pages` | bez `node-id` převést rámce ze všech stránek |
 | `--dump-json f.json` / `--from-json f.json --images-dir dir` | uložení dat z API a offline převod |
 
-### Webové rozhraní (lokálně)
+#### Lokální webové rozhraní (Python)
 
 ```bash
 python -m figma2pptx.web          # http://127.0.0.1:8000
@@ -75,12 +103,13 @@ Vložíte odkaz + token, kliknete na *Převést* a stáhne se `.pptx`.
   Jiné metriky písma mohou mírně změnit zalomení řádků.
 - **Google Slides** při importu PPTX gradienty nemusí převést věrně (chování importu je mimo kontrolu
   tohoto nástroje). Pro 100% shodu barev v Google Slides použijte `--rasterize-gradients`.
+- Netlify funkce mají limit velikosti odpovědi (řádově jednotky MB). Obrázky se nejdřív stahují přímo z Figma CDN; přes proxy jdou jen jako záloha.
 - Na jednom tvaru umí PPTX jen jeden stín – použije se první viditelný.
 - Rozdílné tloušťky jednotlivých stran okraje → použije se největší.
 - Figma Slides: nástroj zpracovává uzly typu `SLIDE`; pokud by REST API pro konkrétní Slides soubor
   data nevrátilo, zkopírujte snímek do běžného Design souboru a převeďte odkaz odtud.
 
-## Testy
+### Testy
 
 ```bash
 python -m unittest discover -s tests -t .

@@ -5,3 +5,5 @@ build/
 dist/
 *.pptx
 .venv/
+node_modules/
+!web/template.pptx

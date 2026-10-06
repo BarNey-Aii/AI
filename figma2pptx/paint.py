@@ -274,7 +274,16 @@ def line_xml(node: dict, ctx: Ctx, nw, nh, box, opacity: float, paint: dict | No
         paint = strokes[-1] if strokes else None
     if paint is None or w <= 0:
         return "<a:ln><a:noFill/></a:ln>"
-    fill = fill_xml(paint, ctx, nw, nh, box, opacity, image_bytes) or "<a:noFill/>"
+    kind = paint.get("type") or ""
+    if kind.startswith("GRADIENT_"):
+        # Lines cannot hold picture fills -> always a native gradient.
+        a = float(paint.get("opacity", 1.0)) * opacity
+        if kind == "GRADIENT_LINEAR":
+            fill = linear_gradient_xml(paint, nw, nh, box, a)
+        else:
+            fill = radial_gradient_xml(dict(paint, type="GRADIENT_RADIAL"), nw, nh, box, a)
+    else:
+        fill = fill_xml(paint, ctx, nw, nh, box, opacity, image_bytes) or "<a:noFill/>"
     if fill.startswith("<a:blipFill"):
         fill = f"<a:solidFill>{color_xml({'r': 0.5, 'g': 0.5, 'b': 0.5}, opacity)}</a:solidFill>"
     cap = _CAP.get(node.get("strokeCap", "NONE"), "flat")

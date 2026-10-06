@@ -1,0 +1,10 @@
+[build]
+  publish = "web"
+  functions = "netlify/functions"
+  command = ""
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
