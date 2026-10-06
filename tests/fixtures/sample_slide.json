@@ -1,0 +1,694 @@
+{
+ "nodes": {
+  "1:1": {
+   "document": {
+    "id": "1:1",
+    "name": "Snímek 1",
+    "type": "FRAME",
+    "relativeTransform": [
+     [
+      1.0,
+      -0.0,
+      100
+     ],
+     [
+      0.0,
+      1.0,
+      50
+     ]
+    ],
+    "size": {
+     "x": 1920,
+     "y": 1080
+    },
+    "absoluteBoundingBox": {
+     "x": 100,
+     "y": 50,
+     "width": 1920,
+     "height": 1080
+    },
+    "fills": [
+     {
+      "type": "GRADIENT_LINEAR",
+      "gradientHandlePositions": [
+       {
+        "x": 0,
+        "y": 0
+       },
+       {
+        "x": 1,
+        "y": 1
+       },
+       {
+        "x": -0.5,
+        "y": 0.5
+       }
+      ],
+      "gradientStops": [
+       {
+        "position": 0,
+        "color": {
+         "r": 0.07,
+         "g": 0.05,
+         "b": 0.25,
+         "a": 1
+        }
+       },
+       {
+        "position": 0.6,
+        "color": {
+         "r": 0.35,
+         "g": 0.1,
+         "b": 0.6,
+         "a": 1
+        }
+       },
+       {
+        "position": 1,
+        "color": {
+         "r": 0.95,
+         "g": 0.35,
+         "b": 0.45,
+         "a": 1
+        }
+       }
+      ]
+     }
+    ],
+    "children": [
+     {
+      "id": "1:2",
+      "name": "Karta",
+      "type": "RECTANGLE",
+      "relativeTransform": [
+       [
+        1.0,
+        -0.0,
+        120
+       ],
+       [
+        0.0,
+        1.0,
+        140
+       ]
+      ],
+      "size": {
+       "x": 520,
+       "y": 360
+      },
+      "absoluteBoundingBox": {
+       "x": 220,
+       "y": 190,
+       "width": 520,
+       "height": 360
+      },
+      "fills": [
+       {
+        "type": "GRADIENT_RADIAL",
+        "gradientHandlePositions": [
+         {
+          "x": 0.5,
+          "y": 0.5
+         },
+         {
+          "x": 1,
+          "y": 0.5
+         },
+         {
+          "x": 0.5,
+          "y": 1
+         }
+        ],
+        "gradientStops": [
+         {
+          "position": 0,
+          "color": {
+           "r": 1,
+           "g": 0.9,
+           "b": 0.3,
+           "a": 1
+          }
+         },
+         {
+          "position": 1,
+          "color": {
+           "r": 1,
+           "g": 0.3,
+           "b": 0.1,
+           "a": 1
+          }
+         }
+        ]
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "a": 1
+        }
+       }
+      ],
+      "strokeWeight": 6,
+      "strokeAlign": "INSIDE",
+      "cornerRadius": 32,
+      "effects": [
+       {
+        "type": "DROP_SHADOW",
+        "visible": true,
+        "color": {
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "a": 0.45
+        },
+        "offset": {
+         "x": 0,
+         "y": 20
+        },
+        "radius": 40,
+        "spread": 0
+       }
+      ]
+     },
+     {
+      "id": "1:3",
+      "name": "Kruh s obrázkem",
+      "type": "ELLIPSE",
+      "relativeTransform": [
+       [
+        1.0,
+        -0.0,
+        720
+       ],
+       [
+        0.0,
+        1.0,
+        140
+       ]
+      ],
+      "size": {
+       "x": 360,
+       "y": 360
+      },
+      "absoluteBoundingBox": {
+       "x": 820,
+       "y": 190,
+       "width": 360,
+       "height": 360
+      },
+      "fills": [
+       {
+        "type": "IMAGE",
+        "imageRef": "img1",
+        "scaleMode": "FILL"
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "color": {
+         "r": 1,
+         "g": 0.8,
+         "b": 0.2,
+         "a": 1
+        }
+       }
+      ],
+      "strokeWeight": 10,
+      "strokeAlign": "OUTSIDE"
+     },
+     {
+      "id": "1:4",
+      "name": "Angular",
+      "type": "RECTANGLE",
+      "relativeTransform": [
+       [
+        1.0,
+        -0.0,
+        1180
+       ],
+       [
+        0.0,
+        1.0,
+        140
+       ]
+      ],
+      "size": {
+       "x": 300,
+       "y": 300
+      },
+      "absoluteBoundingBox": {
+       "x": 1280,
+       "y": 190,
+       "width": 300,
+       "height": 300
+      },
+      "fills": [
+       {
+        "type": "GRADIENT_ANGULAR",
+        "gradientHandlePositions": [
+         {
+          "x": 0.5,
+          "y": 0.5
+         },
+         {
+          "x": 1,
+          "y": 0.5
+         },
+         {
+          "x": 0.5,
+          "y": 1
+         }
+        ],
+        "gradientStops": [
+         {
+          "position": 0,
+          "color": {
+           "r": 1,
+           "g": 0,
+           "b": 0,
+           "a": 1
+          }
+         },
+         {
+          "position": 0.33,
+          "color": {
+           "r": 0,
+           "g": 1,
+           "b": 0,
+           "a": 1
+          }
+         },
+         {
+          "position": 0.66,
+          "color": {
+           "r": 0,
+           "g": 0,
+           "b": 1,
+           "a": 1
+          }
+         },
+         {
+          "position": 1,
+          "color": {
+           "r": 1,
+           "g": 0,
+           "b": 0,
+           "a": 1
+          }
+         }
+        ]
+       }
+      ],
+      "rectangleCornerRadii": [
+       0,
+       60,
+       0,
+       60
+      ]
+     },
+     {
+      "id": "1:5",
+      "name": "Otočený",
+      "type": "RECTANGLE",
+      "relativeTransform": [
+       [
+        0.8660254037844387,
+        -0.49999999999999994,
+        1600
+       ],
+       [
+        0.49999999999999994,
+        0.8660254037844387,
+        150
+       ]
+      ],
+      "size": {
+       "x": 200,
+       "y": 120
+      },
+      "absoluteBoundingBox": {
+       "x": 1640.0,
+       "y": 200.0,
+       "width": 233.2050807568878,
+       "height": 203.92304845413264
+      },
+      "fills": [
+       {
+        "type": "GRADIENT_LINEAR",
+        "gradientHandlePositions": [
+         {
+          "x": 0,
+          "y": 0.5
+         },
+         {
+          "x": 1,
+          "y": 0.5
+         },
+         {
+          "x": 0,
+          "y": 1
+         }
+        ],
+        "gradientStops": [
+         {
+          "position": 0,
+          "color": {
+           "r": 0,
+           "g": 0.8,
+           "b": 0.9,
+           "a": 1
+          }
+         },
+         {
+          "position": 1,
+          "color": {
+           "r": 0.1,
+           "g": 0.2,
+           "b": 1,
+           "a": 0.4
+          }
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "id": "1:6",
+      "name": "Skupina",
+      "type": "GROUP",
+      "relativeTransform": [
+       [
+        1.0,
+        -0.0,
+        120
+       ],
+       [
+        0.0,
+        1.0,
+        600
+       ]
+      ],
+      "size": {
+       "x": 700,
+       "y": 300
+      },
+      "absoluteBoundingBox": {
+       "x": 220,
+       "y": 650,
+       "width": 700,
+       "height": 300
+      },
+      "children": [
+       {
+        "id": "1:7",
+        "name": "Nadpis",
+        "type": "TEXT",
+        "relativeTransform": [
+         [
+          1.0,
+          -0.0,
+          120
+         ],
+         [
+          0.0,
+          1.0,
+          600
+         ]
+        ],
+        "size": {
+         "x": 700,
+         "y": 120
+        },
+        "absoluteBoundingBox": {
+         "x": 220,
+         "y": 650,
+         "width": 700,
+         "height": 120
+        },
+        "characters": "Ahoj světe 👋\nDruhý řádek textu",
+        "characterStyleOverrides": [
+         0,
+         0,
+         0,
+         0,
+         0,
+         1,
+         1,
+         1,
+         1,
+         1
+        ],
+        "styleOverrideTable": {
+         "1": {
+          "fontWeight": 800,
+          "fills": [
+           {
+            "type": "SOLID",
+            "color": {
+             "r": 1,
+             "g": 0.85,
+             "b": 0.2,
+             "a": 1
+            }
+           }
+          ]
+         }
+        },
+        "style": {
+         "fontFamily": "Inter",
+         "fontWeight": 400,
+         "fontSize": 64,
+         "textAlignHorizontal": "LEFT",
+         "textAlignVertical": "TOP",
+         "letterSpacing": 0,
+         "lineHeightPx": 77,
+         "lineHeightUnit": "INTRINSIC_%"
+        },
+        "fills": [
+         {
+          "type": "SOLID",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1,
+           "a": 1
+          }
+         }
+        ]
+       },
+       {
+        "id": "1:8",
+        "name": "Hvězda",
+        "type": "STAR",
+        "relativeTransform": [
+         [
+          1.0,
+          -0.0,
+          620
+         ],
+         [
+          0.0,
+          1.0,
+          720
+         ]
+        ],
+        "size": {
+         "x": 200,
+         "y": 181
+        },
+        "absoluteBoundingBox": {
+         "x": 720,
+         "y": 770,
+         "width": 200,
+         "height": 181
+        },
+        "fills": [
+         {
+          "type": "GRADIENT_LINEAR",
+          "gradientHandlePositions": [
+           {
+            "x": 0,
+            "y": 0
+           },
+           {
+            "x": 1,
+            "y": 1
+           },
+           {
+            "x": -0.5,
+            "y": 0.5
+           }
+          ],
+          "gradientStops": [
+           {
+            "position": 0,
+            "color": {
+             "r": 0.07,
+             "g": 0.05,
+             "b": 0.25,
+             "a": 1
+            }
+           },
+           {
+            "position": 0.6,
+            "color": {
+             "r": 0.35,
+             "g": 0.1,
+             "b": 0.6,
+             "a": 1
+            }
+           },
+           {
+            "position": 1,
+            "color": {
+             "r": 0.95,
+             "g": 0.35,
+             "b": 0.45,
+             "a": 1
+            }
+           }
+          ]
+         }
+        ],
+        "fillGeometry": [
+         {
+          "path": "M100 0L129.4 59.5L195.1 69.1L147.6 115.5L158.8 180.9L100 150L41.2 180.9L52.4 115.5L4.9 69.1L70.6 59.5L100 0Z",
+          "windingRule": "NONZERO"
+         }
+        ],
+        "strokes": [],
+        "strokeWeight": 0
+       }
+      ]
+     },
+     {
+      "id": "1:9",
+      "name": "Čára",
+      "type": "LINE",
+      "relativeTransform": [
+       [
+        0.9659258262890683,
+        0.25881904510252074,
+        900
+       ],
+       [
+        -0.25881904510252074,
+        0.9659258262890683,
+        700
+       ]
+      ],
+      "size": {
+       "x": 500,
+       "y": 0
+      },
+      "absoluteBoundingBox": {
+       "x": 1000.0,
+       "y": 620.5904774487396,
+       "width": 482.96291314453424,
+       "height": 129.40952255126035
+      },
+      "strokes": [
+       {
+        "type": "SOLID",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "a": 1
+        }
+       }
+      ],
+      "strokeWeight": 8,
+      "strokeCap": "ROUND",
+      "strokeDashes": [
+       24,
+       16
+      ]
+     },
+     {
+      "id": "1:10",
+      "name": "Gradientní text",
+      "type": "TEXT",
+      "relativeTransform": [
+       [
+        1.0,
+        -0.0,
+        900
+       ],
+       [
+        0.0,
+        1.0,
+        800
+       ]
+      ],
+      "size": {
+       "x": 900,
+       "y": 200
+      },
+      "absoluteBoundingBox": {
+       "x": 1000,
+       "y": 850,
+       "width": 900,
+       "height": 200
+      },
+      "characters": "GRADIENT TEXT",
+      "style": {
+       "fontFamily": "Arial",
+       "fontWeight": 700,
+       "fontSize": 110,
+       "textAlignHorizontal": "RIGHT",
+       "textAlignVertical": "CENTER",
+       "letterSpacing": 4,
+       "lineHeightPx": 130,
+       "lineHeightUnit": "PIXELS"
+      },
+      "fills": [
+       {
+        "type": "GRADIENT_LINEAR",
+        "gradientHandlePositions": [
+         {
+          "x": 0,
+          "y": 0.5
+         },
+         {
+          "x": 1,
+          "y": 0.5
+         },
+         {
+          "x": 0,
+          "y": 1
+         }
+        ],
+        "gradientStops": [
+         {
+          "position": 0,
+          "color": {
+           "r": 0.2,
+           "g": 1,
+           "b": 0.8,
+           "a": 1
+          }
+         },
+         {
+          "position": 1,
+          "color": {
+           "r": 1,
+           "g": 0.3,
+           "b": 0.9,
+           "a": 1
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  }
+ }
+}
