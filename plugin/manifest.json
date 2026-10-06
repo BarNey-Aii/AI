@@ -1,0 +1,10 @@
+{
+  "name": "Figma → PPTX (1:1)",
+  "id": "figma2pptx-local",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "dist/ui.html",
+  "editorType": ["figma", "slides"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": { "allowedDomains": ["none"] }
+}

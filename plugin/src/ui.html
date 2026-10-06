@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="cs"><head><meta charset="utf-8">
+<style>
+:root { --text: var(--figma-color-text, #1d1d22); --muted: var(--figma-color-text-secondary, #6b6b76);
+  --bg: var(--figma-color-bg, #fff); --line: var(--figma-color-border, rgba(120,120,135,.3));
+  --accent: var(--figma-color-bg-brand, #5b4bff); --on-accent: var(--figma-color-text-onbrand, #fff);
+  --err: var(--figma-color-text-danger, #c62828); --ok: var(--figma-color-text-success, #1b7f3b); }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 16px; font: 12px/1.5 Inter, system-ui, sans-serif; color: var(--text); background: var(--bg); }
+h1 { font-size: 15px; margin: 0 0 2px; } p { margin: 0 0 12px; color: var(--muted); }
+label.f { display: block; font-weight: 600; margin: 12px 0 4px; }
+input[type=text], select { width: 100%; padding: 7px 8px; border: 1px solid var(--line); border-radius: 6px;
+  background: transparent; color: inherit; font: inherit; }
+.check { display: flex; gap: 8px; align-items: flex-start; margin-top: 8px; } .check input { margin-top: 2px; }
+button { margin-top: 16px; width: 100%; padding: 9px; border: 0; border-radius: 6px; background: var(--accent);
+  color: var(--on-accent); font: 600 13px Inter, system-ui, sans-serif; cursor: pointer; }
+button:disabled { opacity: .5; cursor: default; }
+#info { font-weight: 600; color: var(--text); }
+#status { margin-top: 10px; color: var(--muted); min-height: 1.5em; } #status.ok { color: var(--ok); }
+.msg { margin-top: 10px; padding: 8px 10px; border-radius: 6px; white-space: pre-wrap; max-height: 140px; overflow: auto; }
+.msg.err { color: var(--err); background: rgba(198,40,40,.08); } .msg.warn { background: rgba(230,160,0,.12); }
+small { color: var(--muted); display: block; margin-top: 3px; }
+</style></head>
+<body>
+<h1>Export do PPTX</h1>
+<p id="info">Načítám…</p>
+
+<label class="f" for="mode">Režim</label>
+<select id="mode">
+  <option value="fidelity">Věrný 1:1 + editovatelný (doporučeno)</option>
+  <option value="editable">Maximálně editovatelný</option>
+  <option value="image">Přesná kopie – každý snímek jako obrázek</option>
+</select>
+<small id="hint">Vše, co PPTX umí, je nativní a editovatelné; masky, rozmazání a ořezy se vloží jako přesný obrázek.</small>
+
+<label class="f" for="width">Velikost snímku</label>
+<select id="width">
+  <option value="">Přesně podle Figmy (1920 px = 20″)</option>
+  <option value="13.333">PowerPoint 16:9 (13,33″)</option>
+  <option value="10">Google Slides 16:9 (10″)</option>
+</select>
+
+<label class="f" for="scale">Rozlišení obrázků</label>
+<select id="scale"><option value="2">2×</option><option value="3">3×</option><option value="1">1×</option></select>
+
+<div class="check"><input id="raster" type="checkbox"><label for="raster">Gradienty jako přesný obrázek ve výplni (doporučeno pro Google Slides)</label></div>
+<div class="check"><input id="weights" type="checkbox"><label for="weights">Řez písma v názvu fontu („Inter SemiBold“)</label></div>
+
+<label class="f" for="name">Název souboru</label>
+<input id="name" type="text" value="prezentace">
+
+<button id="go" disabled>Exportovat PPTX</button>
+<div id="status" role="status"></div>
+<div id="msg"></div>
+<script>/*__UI_JS__*/</script>
+</body></html>

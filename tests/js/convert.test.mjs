@@ -66,3 +66,36 @@ test("slide width option scales", async () => {
   assert.equal(result.widthEmu, 9144000);
   assert.ok(result.slides[0].shapesXml.includes("a:blipFill"));
 });
+
+test("fidelity mode renders blurs, masks and clipped overflow as pictures", async () => {
+  const bb = (x, y, w, h) => ({ x, y, width: w, height: h });
+  const rect = (id, x, y, w, h, extra = {}) => ({ id, name: id, type: "RECTANGLE", size: { x: w, y: h },
+    relativeTransform: [[1, 0, x], [0, 1, y]], absoluteBoundingBox: bb(x, y, w, h),
+    fills: [{ type: "SOLID", color: { r: 1, g: 0, b: 0, a: 1 } }], ...extra });
+  const slide = { id: "s", name: "s", type: "SLIDE", size: { x: 1920, y: 1080 }, absoluteBoundingBox: bb(0, 0, 1920, 1080),
+    fills: [{ type: "SOLID", color: { r: 1, g: 1, b: 1, a: 1 } }], children: [
+      rect("blur", 0, 0, 100, 100, { effects: [{ type: "LAYER_BLUR", radius: 8, visible: true }] }),
+      { id: "clip", name: "clip", type: "FRAME", clipsContent: true, size: { x: 200, y: 200 },
+        relativeTransform: [[1, 0, 300], [0, 1, 0]], absoluteBoundingBox: bb(300, 0, 200, 200),
+        children: [rect("over", 250, 150, 100, 100)] },
+      { id: "masked", name: "masked", type: "GROUP", size: { x: 100, y: 100 }, relativeTransform: [[1, 0, 600], [0, 1, 0]],
+        absoluteBoundingBox: bb(600, 0, 100, 100), children: [rect("m", 600, 0, 100, 100, { isMask: true }), rect("x", 600, 0, 100, 100)] },
+      rect("plain", 800, 0, 100, 100),
+    ] };
+  const asked = [];
+  const assets = { imageFill: async () => null, canRender: () => true,
+    renderNodes: async (ids) => { asked.push(...ids); return new Map(ids.map((i) => [i, readFileSync(join(fixtures, "images", "img1.png"))])); } };
+  const res = await new Converter(assets, {}).convert([slide]);
+  assert.deepEqual(asked.sort(), ["blur", "clip", "masked"]);
+  assert.equal((res.slides[0].shapesXml.match(/<p:pic>/g) || []).length, 3);
+  assert.ok(res.slides[0].shapesXml.includes('name="plain"'));
+
+  asked.length = 0;
+  await new Converter(assets, { fidelity: false }).convert([slide]);
+  assert.deepEqual(asked, ["masked"]);
+
+  asked.length = 0;
+  const img = await new Converter(assets, { slideImages: true }).convert([slide]);
+  assert.deepEqual(asked, ["s"]);
+  assert.equal(img.slides[0].bgXml, "");
+});

@@ -37,6 +37,10 @@ export class FigmaClient {
       if (resp.status === 403) throw new Error("Figma API vrátilo 403 – token je neplatný nebo nemá přístup k souboru (scope File content: Read).");
       if (resp.status === 404) throw new Error("Figma soubor nebo uzel nebyl nalezen (404).");
       const text = await resp.text();
+      if (resp.status === 400 && /File type not supported/i.test(text)) {
+        throw new Error("Tento odkaz vede na soubor Figma Slides. Figma API soubory Slides nepodporuje – " +
+          "použijte plugin „Figma → PPTX“ (ke stažení níže), který převede snímky přímo ve Figmě.");
+      }
       if (!resp.ok) throw new Error(`Figma API chyba ${resp.status}: ${text.slice(0, 300)}`);
       const data = JSON.parse(text);
       if (data.err) throw new Error(`Figma API chyba: ${data.err}`);

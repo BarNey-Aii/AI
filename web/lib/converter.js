@@ -15,6 +15,8 @@ export const DEFAULT_OPTIONS = {
   rasterizeGradients: false, // gradients as exact PNG picture fills
   fontWeights: "bold",       // "bold" | "names"
   rasterFallback: true,      // masks/unknown nodes rendered as PNG via the Figma API
+  fidelity: true,            // also render blurs and clipped overflowing frames as PNG (1:1 look)
+  slideImages: false,        // every slide = one exact picture (not editable)
   lang: "cs-CZ",
 };
 
@@ -39,6 +41,30 @@ function fullEllipse(node) {
   if (!a) return true;
   const s = a.startingAngle ?? 0, e = a.endingAngle ?? 2 * Math.PI;
   return (a.innerRadius ?? 0) === 0 && Math.abs(e - s - 2 * Math.PI) < 1e-3;
+}
+
+function invert(m) {
+  const [[a, c, e], [b, d, f]] = m;
+  const det = a * d - b * c || 1e-12;
+  return [[d / det, -c / det, (c * f - d * e) / det], [-b / det, a / det, (b * e - a * f) / det]];
+}
+
+// True when a visible descendant sticks out of the node's own box.
+function overflows(node) {
+  const bb = node.absoluteBoundingBox;
+  if (!bb) return false;
+  const eps = 0.5;
+  const walk = (n) => {
+    for (const c of n.children || []) {
+      if (c.visible === false) continue;
+      const r = c.absoluteRenderBounds || c.absoluteBoundingBox;
+      if (r && (r.x < bb.x - eps || r.y < bb.y - eps || r.x + r.width > bb.x + bb.width + eps ||
+          r.y + r.height > bb.y + bb.height + eps)) return true;
+      if (walk(c)) return true;
+    }
+    return false;
+  };
+  return walk(node);
 }
 
 function hashBytes(u8) {
@@ -107,9 +133,9 @@ export class Converter {
       const ids = [];
       for (const s of slideNodes) this.collectRaster(s, ids, true);
       if (ids.length) {
-        onProgress(`Vykresluji ${ids.length} prvků s maskou`);
+        onProgress(`Vykresluji ${ids.length} prvků jako obrázek`);
         try { this.rendered = await this.assets.renderNodes(ids); }
-        catch (e) { this.warnings.push(`Vykreslení masek selhalo: ${e.message}`); }
+        catch (e) { this.warnings.push(`Vykreslení prvků selhalo: ${e.message}`); }
       }
     }
 
@@ -138,14 +164,19 @@ export class Converter {
   needsRaster(node) {
     const t = node.type;
     if (!KNOWN_TYPES.has(t)) return true;
-    if (CONTAINER_TYPES.has(t) || t === "BOOLEAN_OPERATION") {
-      return (node.children || []).some((c) => c.isMask && c.visible !== false);
-    }
+    if ((CONTAINER_TYPES.has(t) || t === "BOOLEAN_OPERATION") &&
+        (node.children || []).some((c) => c.isMask && c.visible !== false)) return true;
+    if (!this.opt.fidelity) return false;
+    // Effects PPTX cannot draw: layer/background blur.
+    if ((node.effects || []).some((e) => e.visible !== false && /BLUR/.test(e.type || ""))) return true;
+    // Frames that clip children sticking out of them (PPTX has no clipping).
+    if (FRAME_LIKE.has(t) && node.clipsContent && overflows(node)) return true;
     return false;
   }
 
   collectRaster(node, ids, isRoot = false) {
     if (node.visible === false) return;
+    if (isRoot && this.opt.slideImages) { ids.push(node.id); return; }
     if (!isRoot && this.needsRaster(node)) { ids.push(node.id); return; }
     if (node.type === "BOOLEAN_OPERATION") return;
     for (const c of node.children || []) this.collectRaster(c, ids);
@@ -221,6 +252,7 @@ export class Converter {
 
   // ---------------------------------------------------------------- transforms
   transform(node, parentM, containerM) {
+    if (node.absoluteTransform && this.rootInv) return g.mul(this.rootInv, g.mat(node.absoluteTransform));
     const rel = node.relativeTransform;
     const [w, h] = nodeSize(node);
     const bb = node.absoluteBoundingBox;
@@ -240,6 +272,11 @@ export class Converter {
     const bb = root.absoluteBoundingBox || { x: 0, y: 0 };
     this.origin = [+bb.x || 0, +bb.y || 0];
     const [w, h] = nodeSize(root);
+    this.rootInv = root.absoluteTransform ? invert(g.mat(root.absoluteTransform)) : null;
+    if (this.opt.slideImages && this.rendered.has(root.id)) {
+      const el = this.pic(root.name || "Snímek", new g.Placement(0, 0, w, h), this.embed(this.rendered.get(root.id), `render:${root.id}`));
+      return { name: root.name || "", bgXml: "", shapesXml: el.xml, rels: this.slideState.rels };
+    }
     let rootM = g.IDENTITY;
     if (root.relativeTransform && !FRAME_LIKE.has(root.type)) {
       const m = g.mat(root.relativeTransform);
@@ -303,7 +340,7 @@ export class Converter {
 
   raster(node, name) {
     const data = this.rendered.get(node.id);
-    const bb = node.absoluteBoundingBox;
+    const bb = node.rasterBounds || node.absoluteBoundingBox;
     if (!data || !bb) return null;
     const pl = new g.Placement(bb.x - this.origin[0], bb.y - this.origin[1], bb.width, bb.height);
     return this.pic(`${name} (obrázek)`, pl, this.embed(data, `render:${node.id}`));

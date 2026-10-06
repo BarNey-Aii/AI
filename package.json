@@ -3,9 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/js/*.test.mjs"
+    "test": "node --test tests/js/*.test.mjs",
+    "build:plugin": "node plugin/build.mjs"
   },
   "devDependencies": {
+    "esbuild": "^0.25.12",
     "jszip": "3.10.1"
   }
 }

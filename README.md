@@ -4,7 +4,32 @@ Nástroj stáhne snímek/rámec z Figmy přes oficiální REST API a postaví z 
 PowerPoint objekty** (tvary, textová pole, obrázky, skupiny) – ne obrázek celé stránky.
 Výsledný `.pptx` jde upravovat v PowerPointu, Keynote i po importu do Google Slides.
 
-## Webová verze na Netlify (doporučeno)
+## Figma Slides → plugin (nutné pro soubory Figma Slides)
+
+**Figma REST API soubory Figma Slides nepodporuje** – vrací
+`400 File type not supported by this endpoint`. Proto je převodník také jako **Figma plugin**,
+který čte snímky přímo v editoru přes Plugin API (Slides podporuje) a stáhne `.pptx`.
+
+### Instalace pluginu
+1. Stáhněte `figma2pptx-plugin.zip` (na Netlify webu odkaz „Stáhněte plugin“, v repozitáři `web/figma2pptx-plugin.zip`)
+   a rozbalte. Případně použijte přímo složku `plugin/` z repozitáře.
+2. Otevřete prezentaci v **desktopové aplikaci Figma**.
+3. **Plugins → Development → Import plugin from manifest…** → `manifest.json`.
+4. **Plugins → Development → Figma → PPTX (1:1)** → *Exportovat PPTX*.
+
+Bez výběru se převedou všechny (nepřeskočené) snímky v pořadí prezentace; s výběrem jen vybrané.
+Funguje i v běžných Design souborech (vybrané rámce, jinak všechny rámce stránky).
+
+### Režimy
+| Režim | Výsledek |
+|---|---|
+| **Věrný 1:1 + editovatelný** (výchozí) | vše, co PPTX umí, je nativní a editovatelné; masky, rozmazání (blur) a rámce s ořezem přečnívajícího obsahu se vloží jako přesný obrázek vykreslený Figmou |
+| Maximálně editovatelný | vše nativně; rozmazání a ořezy se vynechají |
+| Přesná kopie | každý snímek jako jeden obrázek – vzhled 100 %, needitovatelné |
+
+Sestavení pluginu ze zdrojů: `npm install && npm run build:plugin`.
+
+## Webová verze na Netlify (pro Design soubory)
 
 Celý převod běží **v prohlížeči** (JavaScript, `web/`). Netlify funkce
 `netlify/functions/figma.mjs` je jen proxy na Figma API (prohlížeč ho kvůli CORS nemůže volat

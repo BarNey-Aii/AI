@@ -7,3 +7,4 @@ dist/
 .venv/
 node_modules/
 !web/template.pptx
+plugin/src/template.b64.js

@@ -33,6 +33,9 @@ button:disabled { opacity:.6; cursor:progress; }
 .msg.warn { background:var(--warn-bg); }
 details { margin-top:22px; color:var(--muted); } summary { cursor:pointer; }
 a { color:var(--accent); }
+.plugin { margin-top:26px; padding-top:18px; border-top:1px solid var(--line); }
+.plugin h2 { font-size:17px; margin:0 0 6px; } .plugin ol { padding-left:20px; margin:8px 0 0; } .plugin li { margin:4px 0; }
+code { font-size:.9em; }
 </style>
 </head>
 <body>
@@ -66,6 +69,17 @@ a { color:var(--accent); }
     </form>
     <div id="status" role="status" aria-live="polite"></div>
     <div id="messages"></div>
+
+    <div class="plugin">
+      <h2>Soubory Figma Slides → plugin</h2>
+      <p>Figma API neumí číst soubory <b>Figma Slides</b> (odkazy <code>figma.com/slides/…</code>). Pro ně použijte plugin, který převede snímky přímo ve Figmě – stejným převodníkem, 1:1.</p>
+      <ol>
+        <li><a href="figma2pptx-plugin.zip" download>Stáhněte plugin (ZIP)</a> a rozbalte ho.</li>
+        <li>Otevřete prezentaci v <b>desktopové aplikaci Figma</b>.</li>
+        <li>Menu → <b>Plugins → Development → Import plugin from manifest…</b> → vyberte <code>manifest.json</code>.</li>
+        <li>Spusťte <b>Plugins → Development → Figma → PPTX (1:1)</b> → <b>Exportovat PPTX</b>.</li>
+      </ol>
+    </div>
 
     <details>
       <summary>Co se převádí a omezení</summary>
