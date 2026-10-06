@@ -8,3 +8,4 @@ dist/
 node_modules/
 !web/template.pptx
 plugin/src/template.b64.js
+!plugin/dist/
