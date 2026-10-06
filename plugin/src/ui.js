@@ -3,6 +3,11 @@ import JSZip from "jszip";
 import { Converter } from "../../web/lib/converter.js";
 import { buildPptx } from "../../web/lib/pptx.js";
 import TEMPLATE_B64 from "./template.b64.js";
+import { FontLibrary } from "../../web/lib/fonts.js";
+import { cropImage, normalizeImage } from "../../web/lib/imageops.js";
+
+const fontLib = new FontLibrary();
+let usedFonts = [];
 
 const $ = (id) => document.getElementById(id);
 const send = (msg) => parent.postMessage({ pluginMessage: msg }, "*");
@@ -21,7 +26,14 @@ function request(msg) {
 window.onmessage = (ev) => {
   const msg = ev.data && ev.data.pluginMessage;
   if (!msg) return;
-  if (msg.type === "info") {
+  if (msg.type === "stored-fonts") {
+    for (const f of msg.fonts) { try { fontLib.add(new Uint8Array(f.bytes), f.name); } catch { /* skip */ } }
+    renderFonts();
+  } else if (msg.type === "font-save-failed") {
+    $("fontmsg").textContent = `Písmo „${msg.name}“ se nepodařilo uložit pro příště (${msg.message}). Pro tento export je načtené.`;
+  } else if (msg.type === "info") {
+    usedFonts = msg.fonts || [];
+    renderFonts();
     const n = msg.count;
     const what = msg.editor === "slides" ? plural(n, "snímek", "snímky", "snímků") : plural(n, "rámec", "rámce", "rámců");
     $("info").textContent = n
@@ -41,8 +53,53 @@ window.onmessage = (ev) => {
   }
 };
 
+const STYLE = { 100: "Thin", 200: "ExtraLight", 300: "Light", 400: "Regular", 500: "Medium", 600: "SemiBold", 700: "Bold", 800: "ExtraBold", 900: "Black" };
+const fontLabel = (f) => `${f.family} ${STYLE[Math.round(f.weight / 100) * 100] || f.weight}${f.italic ? " Italic" : ""}`;
+
+function renderFonts() {
+  const box = $("fonts");
+  box.textContent = "";
+  if (!usedFonts.length) { box.textContent = "Žádný text."; return; }
+  for (const f of usedFonts) {
+    const row = document.createElement("div");
+    const name = document.createElement("span");
+    name.textContent = fontLabel(f);
+    const st = document.createElement("span");
+    if (fontLib.find(f.family, f.weight, f.italic)) { st.className = "ok-f"; st.textContent = "✓ vloží se"; }
+    else {
+      st.className = "miss-f";
+      const a = document.createElement("a");
+      a.href = `https://fonts.google.com/specimen/${encodeURIComponent(f.family).replace(/%20/g, "+")}`;
+      a.target = "_blank";
+      a.textContent = "chybí soubor";
+      a.title = "Otevřít na Google Fonts (pokud tam písmo je)";
+      st.appendChild(a);
+    }
+    row.append(name, st);
+    box.appendChild(row);
+  }
+}
+
+$("fontfiles").onchange = async (ev) => {
+  const errors = [];
+  for (const file of ev.target.files) {
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const info = fontLib.add(bytes, file.name);
+      if (info.isVariable) errors.push(`${file.name}: variabilní písmo – vloží se jen výchozí řez, použijte statické .ttf.`);
+      send({ type: "font-save", key: `font:${info.fullName}|${info.italic ? 1 : 0}`, name: info.fullName, bytes });
+    } catch (e) {
+      errors.push(`${file.name}: ${e.message}`);
+    }
+  }
+  $("fontmsg").textContent = errors.join("\n");
+  ev.target.value = "";
+  renderFonts();
+};
+
 const assets = {
-  imageFill: (hash) => request({ type: "image", hash }),
+  imageFill: async (hash) => normalizeImage(await request({ type: "image", hash })),
+  cropImage,
   canRender: () => true,
   async renderNodes(ids) {
     const out = new Map();
@@ -86,7 +143,9 @@ $("go").onclick = async () => {
       fontWeights: $("weights").checked ? "names" : "bold",
       fidelity: mode !== "editable",
       slideImages: mode === "image",
+      fonts: $("embed").checked ? fontLib : null,
     });
+    fontLib.used = new Set();
     const result = await conv.convert(slides, setStatus);
     setStatus("Sestavuji PPTX…");
     const blob = await buildPptx(JSZip, b64ToBytes(TEMPLATE_B64), result, "blob");
@@ -97,7 +156,11 @@ $("go").onclick = async () => {
     const n = result.slides.length;
     setStatus(`Hotovo – ${n} ${plural(n, "snímek", "snímky", "snímků")} → ${a.download}`, true);
     send({ type: "notify", text: `PPTX hotové (${n} ${plural(n, "snímek", "snímky", "snímků")})` });
-    if (result.warnings.length) showWarn(result.warnings);
+    const warnings = [...result.warnings];
+    if ($("embed").checked && result.missingFonts.length) {
+      warnings.unshift(`Nevložená písma (chybí soubor): ${result.missingFonts.map(fontLabel).join(", ")} – na počítači bez nich se nahradí.`);
+    }
+    if (warnings.length) showWarn(warnings);
   } catch (e) {
     console.error(e);
     setStatus("");

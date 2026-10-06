@@ -6,7 +6,8 @@ const NS = 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
 const RT_SLIDE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide";
 const RT_LAYOUT = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout";
 const CT_SLIDE = "application/vnd.openxmlformats-officedocument.presentationml.slide+xml";
-const MIME = { png: "image/png", jpeg: "image/jpeg", gif: "image/gif" };
+const RT_FONT = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/font";
+const MIME = { png: "image/png", jpeg: "image/jpeg", gif: "image/gif", fntdata: "application/x-fontdata" };
 
 const escAttr = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -61,11 +62,34 @@ export async function buildPptx(JSZip, template, result, outType = "blob") {
   });
   for (const f of result.media) zip.file(`ppt/media/${f.name}`, f.data);
 
+  // Embedded fonts (EOT .fntdata) so the deck renders with the original typefaces anywhere.
+  let fontLst = "";
+  let fontRid = maxRid + result.slides.length;
+  let fontNo = 0;
+  for (const font of result.fonts || []) {
+    let slots = "";
+    for (const slot of ["regular", "bold", "italic", "boldItalic"]) {
+      if (!font.slots[slot]) continue;
+      const rid = `rId${++fontRid}`;
+      const file = `font${++fontNo}.fntdata`;
+      zip.file(`ppt/fonts/${file}`, font.slots[slot]);
+      newRels.push(`<Relationship Id="${rid}" Type="${RT_FONT}" Target="fonts/${file}"/>`);
+      slots += `<p:${slot} r:id="${rid}"/>`;
+    }
+    const panose = (font.panose || []).map((b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+    fontLst += `<p:embeddedFont><p:font typeface="${escAttr(font.typeface)}"${panose.length === 20 ? ` panose="${panose}"` : ""} pitchFamily="2" charset="0"/>${slots}</p:embeddedFont>`;
+  }
+
   pres = pres.replace(/<p:sldIdLst>[\s\S]*?<\/p:sldIdLst>|<p:sldIdLst\/>/, "");
   pres = pres.replace("</p:sldMasterIdLst>", `</p:sldMasterIdLst><p:sldIdLst>${sldIds.join("")}</p:sldIdLst>`);
   pres = pres.replace(/<p:sldSz [^>]*\/>/, `<p:sldSz cx="${result.widthEmu}" cy="${result.heightEmu}"/>`);
+  if (fontLst) {
+    pres = pres.replace(/(<p:notesSz [^>]*\/>)/, `$1<p:embeddedFontLst>${fontLst}</p:embeddedFontLst>`);
+    pres = pres.replace(/ saveSubsetFonts="1"/, "").replace("<p:presentation ", '<p:presentation embedTrueTypeFonts="1" ');
+  }
   presRels = presRels.replace("</Relationships>", `${newRels.join("")}</Relationships>`);
   const exts = new Set(result.media.map((f) => f.ext));
+  if (fontLst) exts.add("fntdata");
   let defaults = "";
   for (const ext of exts) {
     if (!new RegExp(`Extension="${ext}"`, "i").test(types)) defaults += `<Default Extension="${ext}" ContentType="${MIME[ext] || "application/octet-stream"}"/>`;

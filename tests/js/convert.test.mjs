@@ -99,3 +99,51 @@ test("fidelity mode renders blurs, masks and clipped overflow as pictures", asyn
   assert.deepEqual(asked, ["s"]);
   assert.equal(img.slides[0].bgXml, "");
 });
+
+test("fonts: parse, exact-weight matching and EOT container", async () => {
+  const { FontLibrary, makeEot, parseFont } = await import("../../web/lib/fonts.js");
+  const reg = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
+  const bold = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf";
+  let ok = true;
+  try { readFileSync(reg); } catch { ok = false; }
+  if (!ok) return; // system without DejaVu fonts
+  const lib = new FontLibrary();
+  lib.add(readFileSync(reg)); lib.add(readFileSync(bold));
+  assert.equal(lib.resolve("DejaVu Sans", 700, false).bold, true);
+  assert.equal(lib.resolve("DejaVu Sans", 400, false).bold, false);
+  assert.equal(lib.find("DejaVu Sans", 800, false), null); // ExtraBold must not silently become Bold
+  const info = parseFont(readFileSync(reg));
+  const eot = makeEot(info);
+  const dv = new DataView(eot.buffer);
+  assert.equal(dv.getUint32(0, true), eot.length);
+  assert.equal(dv.getUint32(4, true), info.bytes.length);
+  assert.equal(dv.getUint32(8, true), 0x00020002);
+  assert.equal(dv.getUint16(34, true), 0x504c);
+  assert.ok(Buffer.from(eot.subarray(eot.length - info.bytes.length)).equals(Buffer.from(info.bytes)));
+  const emb = lib.embedded();
+  assert.equal(emb.length, 1);
+  assert.deepEqual(Object.keys(emb[0].slots).sort(), ["bold", "regular"]);
+});
+
+test("text boxes: single lines never wrap, boxes auto-fit", async () => {
+  const { textLayout, textBodyXml } = await import("../../web/lib/text.js");
+  const node = { characters: "01", size: { x: 40, y: 58 },
+    style: { fontFamily: "X", fontSize: 48, lineHeightPx: 57.6, lineHeightUnit: "PIXELS", textAutoResize: "NONE" },
+    fills: [{ type: "SOLID", color: { r: 0, g: 0, b: 0, a: 1 } }] };
+  const conv = { ctx: { emu: 9525 }, lang: "cs-CZ", fontWeights: "bold", hyperlink: () => "" };
+  assert.equal(textLayout(node, conv).wrapNone, true);
+  assert.match(textBodyXml(node, conv, 1, 40, 58), /wrap="none".*<a:spAutoFit\/>/);
+  const para = { ...node, characters: "Dlouhý text, který se ve Figmě zalamuje na více řádků", size: { x: 300, y: 180 } };
+  const lay = textLayout(para, conv);
+  assert.equal(lay.wrapNone, false);
+  assert.ok(lay.slack > 0);
+});
+
+test("image crop keeps the Figma aspect ratio", async () => {
+  const { imageCrop } = await import("../../web/lib/paint.js");
+  const c = imageCrop({ scaleMode: "FILL" }, 800, 400, 300, 460);
+  const visW = (1 - c.l - c.r) * 800, visH = (1 - c.t - c.b) * 400;
+  assert.ok(Math.abs(visW / visH - 300 / 460) < 1e-9);
+  const f = imageCrop({ scaleMode: "FIT" }, 800, 400, 300, 460);
+  assert.ok(f.t < 0 && f.l === 0);
+});

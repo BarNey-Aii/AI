@@ -40,7 +40,33 @@ function typeface(style, mode) {
   return [family, weight >= 600];
 }
 
-export function textBodyXml(node, conv, opacity, w, h) {
+// Layout decisions shared with the converter: wrapping, width slack and baseline correction.
+export function textLayout(node, conv) {
+  const base = node.style || {};
+  const styles = [base, ...Object.values(node.styleOverrideTable || {}).map((o) => ({ ...base, ...o }))];
+  const fsOf = (s) => +s.fontSize || 12;
+  const lhOf = (s) => (s.lineHeightUnit && s.lineHeightUnit !== "INTRINSIC_%" && s.lineHeightPx ? +s.lineHeightPx : fsOf(s) * 1.25);
+  const maxFs = Math.max(...styles.map(fsOf));
+  const maxLh = Math.max(...styles.map(lhOf));
+  const h = node.size ? +node.size.y : 0;
+  const auto = base.textAutoResize || node.textAutoResize;
+  // One visual line in Figma -> never wrap in PowerPoint (avoids "Know-ho / w" breaks).
+  const singleLine = !(node.characters || "").includes("\n") && h <= maxLh * 1.5;
+  const wrapNone = auto === "WIDTH_AND_HEIGHT" || singleLine;
+  let shift = 0;
+  if (conv.fonts && base.lineHeightUnit && base.lineHeightUnit !== "INTRINSIC_%" && base.lineHeightPx) {
+    const f = conv.fonts.find(base.fontFamily, +base.fontWeight || 400, !!base.italic);
+    if (f) {
+      // PowerPoint puts the first baseline at (line spacing - 0.215 em); Figma centres the glyph box in the line.
+      const fs = fsOf(base), L = +base.lineHeightPx;
+      const asc = f.ascender / f.unitsPerEm, desc = -f.descender / f.unitsPerEm;
+      shift = (L - 0.215 * fs) - ((L - (asc + desc) * fs) / 2 + asc * fs);
+    }
+  }
+  return { wrapNone, slack: wrapNone ? 0 : 0.3 * maxFs, shift };
+}
+
+export function textBodyXml(node, conv, opacity, w, h, layout = textLayout(node, conv)) {
   const ctx = conv.ctx;
   const base = node.style || {};
   const table = node.styleOverrideTable || {};
@@ -61,9 +87,17 @@ export function textBodyXml(node, conv, opacity, w, h) {
     const [st, fills] = styleOf(sid);
     const size = +st.fontSize || 12;
     const attrs = [`lang="${conv.lang}"`, `sz="${Math.max(100, Math.min(400000, Math.round(size * pt * 100)))}"`];
-    const [face, bold] = typeface(st, conv.fontWeights);
+    const weight = +st.fontWeight || 400;
+    const emb = conv.fonts ? conv.fonts.resolve(st.fontFamily, weight, !!st.italic) : null;
+    let face, bold, italic;
+    if (emb) ({ typeface: face, bold, italic } = emb);
+    else {
+      [face, bold] = typeface(st, conv.fontWeights);
+      italic = !!st.italic;
+      if (conv.missingFonts) conv.missingFonts.add(`${st.fontFamily || "?"}|${weight}|${italic ? 1 : 0}`);
+    }
     if (bold) attrs.push('b="1"');
-    if (st.italic) attrs.push('i="1"');
+    if (italic) attrs.push('i="1"');
     if (st.textDecoration === "UNDERLINE") attrs.push('u="sng"');
     else if (st.textDecoration === "STRIKETHROUGH") attrs.push('strike="sngStrike"');
     if (st.textCase === "UPPER") attrs.push('cap="all"');
@@ -127,9 +161,9 @@ export function textBodyXml(node, conv, opacity, w, h) {
     return out.join("");
   });
 
-  const auto = base.textAutoResize || node.textAutoResize;
-  const wrap = auto === "WIDTH_AND_HEIGHT" ? "none" : "square";
+  const wrap = layout.wrapNone ? "none" : "square";
   const anchor = ALIGN_V[base.textAlignVertical] || "t";
-  const body = `<a:bodyPr wrap="${wrap}" lIns="0" tIns="0" rIns="0" bIns="0" anchor="${anchor}" rtlCol="0"><a:noAutofit/></a:bodyPr><a:lstStyle/>`;
+  // spAutoFit: the box grows/shrinks with the text while editing.
+  const body = `<a:bodyPr wrap="${wrap}" lIns="0" tIns="0" rIns="0" bIns="0" anchor="${anchor}" rtlCol="0"><a:spAutoFit/></a:bodyPr><a:lstStyle/>`;
   return `<p:txBody>${body}${parasXml.join("")}</p:txBody>`;
 }

@@ -2,7 +2,7 @@
 import * as g from "./geometry.js";
 import { imageInfo } from "./png.js";
 import { EMU_PER_PX, effectsXml, fillXml, lineXml, visiblePaints } from "./paint.js";
-import { textBodyXml } from "./text.js";
+import { textBodyXml, textLayout } from "./text.js";
 
 const CONTAINER_TYPES = new Set(["FRAME", "COMPONENT", "COMPONENT_SET", "INSTANCE", "SECTION", "SLIDE", "GROUP",
   "SLIDE_ROW", "SLIDE_GRID", "INTERACTIVE_SLIDE_ELEMENT"]);
@@ -17,6 +17,7 @@ export const DEFAULT_OPTIONS = {
   rasterFallback: true,      // masks/unknown nodes rendered as PNG via the Figma API
   fidelity: true,            // also render blurs and clipped overflowing frames as PNG (1:1 look)
   slideImages: false,        // every slide = one exact picture (not editable)
+  fonts: null,               // FontLibrary with font files to embed
   lang: "cs-CZ",
 };
 
@@ -80,7 +81,21 @@ class El {
 
 // Media shared by the whole presentation; relationships are per slide.
 class Media {
-  constructor() { this.byKey = new Map(); this.files = []; }
+  constructor() { this.byKey = new Map(); this.files = []; this.jobs = []; }
+  addCropped(data, ref, crop, boxW, boxH) {
+    const r = (v) => Math.round(v * 10000) / 10000;
+    const key = `${ref || hashBytes(data)}|${r(crop.l)},${r(crop.t)},${r(crop.r)},${r(crop.b)}|${r(boxW / boxH)}`;
+    if (this.byKey.has(key)) return this.byKey.get(key);
+    const src = imageInfo(data);
+    const inside = crop.l >= -1e-6 && crop.t >= -1e-6 && crop.r >= -1e-6 && crop.b >= -1e-6;
+    const ext = src && src.ext === "jpeg" && inside ? "jpeg" : "png";
+    const name = `image${this.files.length + 1}.${ext}`;
+    const file = { name, data, ext };
+    this.files.push(file);
+    this.jobs.push({ file, data, crop, boxW, boxH, ext });
+    this.byKey.set(key, name);
+    return name;
+  }
   add(data, key) {
     key = key || hashBytes(data);
     if (this.byKey.has(key)) return this.byKey.get(key);
@@ -114,6 +129,9 @@ export class Converter {
     if (Math.max(fw, fh) * EMU_PER_PX * scale > maxSide) scale = maxSide / (Math.max(fw, fh) * EMU_PER_PX);
     this.media = new Media();
     this.ctx = { emu: EMU_PER_PX * scale, rasterizeGradients: this.opt.rasterizeGradients, embed: (d, k) => this.embed(d, k) };
+    if (this.assets.cropImage) this.ctx.embedCropped = (d, ref, crop, bw, bh) => this.rid(this.media.addCropped(d, ref, crop, bw, bh));
+    this.fonts = this.opt.fonts;
+    this.missingFonts = new Set();
 
     // Pre-fetch every image fill and raster fallback (all network I/O happens here).
     const refs = new Set();
@@ -143,11 +161,19 @@ export class Converter {
       onProgress(`Převádím snímek ${i + 1}/${slideNodes.length}`);
       return this.convertSlide(node);
     });
+    let k = 0;
+    for (const job of this.media.jobs) {
+      onProgress(`Ořezávám obrázky ${++k}/${this.media.jobs.length}`);
+      try { job.file.data = await this.assets.cropImage(job); }
+      catch (e) { this.warnings.push(`Obrázek se nepodařilo oříznout (${e.message}).`); }
+    }
     return {
       widthEmu: Math.round(fw * this.ctx.emu),
       heightEmu: Math.round(fh * this.ctx.emu),
       slides,
       media: this.media.files,
+      fonts: this.fonts ? this.fonts.embedded() : [],
+      missingFonts: [...this.missingFonts].map((k) => { const [family, weight, italic] = k.split("|"); return { family, weight: +weight, italic: italic === "1" }; }),
       warnings: [...new Set(this.warnings)],
     };
   }
@@ -184,7 +210,10 @@ export class Converter {
 
   // ---------------------------------------------------------------- slide parts
   embed(data, key) {
-    const name = this.media.add(data, key);
+    return this.rid(this.media.add(data, key));
+  }
+
+  rid(name) {
     const s = this.slideState;
     if (!s.mediaRids.has(name)) {
       const rId = `rId${s.rels.length + 1}`;
@@ -221,11 +250,12 @@ export class Converter {
     return new El(xml, pl.bounds());
   }
 
-  pic(name, pl, rId) {
+  pic(name, pl, rId, { blip = null, geom = g.prstGeomXml("rect"), ln = "", effects = "" } = {}) {
     const id = this.nextId();
+    const fill = blip ? blip.replace(/^<a:blipFill/, "<p:blipFill").replace(/<\/a:blipFill>$/, "</p:blipFill>")
+      : `<p:blipFill><a:blip r:embed="${rId}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>`;
     const xml = `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="${g.esc(name)}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>` +
-      `<p:blipFill><a:blip r:embed="${rId}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>` +
-      `<p:spPr>${this.xfrm(pl)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
+      `${fill}<p:spPr>${this.xfrm(pl)}${geom}${ln}${effects}</p:spPr></p:pic>`;
     return new El(xml, pl.bounds());
   }
 
@@ -376,6 +406,15 @@ export class Converter {
     const opaqueStroke = !!sp && sp.type === "SOLID" && (sp.color?.a ?? 1) * (sp.opacity ?? 1) * op >= 0.999;
     const separateStroke = strokes.length > 0 && d !== 0 && !opaqueStroke;
 
+    // A single image fill becomes a real picture (Change Picture / Crop work in PowerPoint).
+    if (fills.length === 1 && fills[0].type === "IMAGE" && (fills[0].scaleMode || "FILL") !== "TILE" &&
+        this.imageBytes(fills[0]) && !d) {
+      const blip = fillXml(fills[0], this.ctx, w, h, [0, 0, w, h], op, this.imageBytes(fills[0]));
+      if (blip) {
+        const ln = strokes.length ? lineXml(node, this.ctx, w, h, [0, 0, w, h], op, sw) : "";
+        return [this.pic(name, g.place(m, 0, 0, w, h), null, { blip, geom: geom(0), ln, effects })];
+      }
+    }
     const layers = [];
     let fillXmls = [];
     for (const p of fills) {
@@ -457,7 +496,11 @@ export class Converter {
   text(node, m, op, name) {
     if (!node.characters) return null;
     const [w, h] = nodeSize(node);
-    const pl = g.place(m, 0, 0, w, h);
-    return this.sp(name, pl, g.prstGeomXml("rect"), null, null, "", textBodyXml(node, this, op, w, h), true);
+    const lay = textLayout(node, this);
+    // Wrapped text gets width slack (other font renderers are a bit wider), kept on the alignment side.
+    const align = (node.style || {}).textAlignHorizontal;
+    const x0 = align === "RIGHT" ? -lay.slack : align === "CENTER" ? -lay.slack / 2 : 0;
+    const pl = g.place(m, x0, -lay.shift, w + lay.slack, h);
+    return this.sp(name, pl, g.prstGeomXml("rect"), null, null, "", textBodyXml(node, this, op, w, h, lay), true);
   }
 }

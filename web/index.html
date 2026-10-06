@@ -61,6 +61,10 @@ code { font-size:.9em; }
         <option value="10">Google Slides 16:9 (10 palců)</option>
       </select>
 
+      <label for="fontfiles">Písma k vložení do PPTX (.ttf / .otf)</label>
+      <input id="fontfiles" type="file" accept=".ttf,.otf" multiple>
+      <small>Vložená písma se zobrazí správně i u klienta, který je nemá nainstalovaná.</small>
+
       <div class="check"><input id="raster" type="checkbox"><label for="raster">Gradienty jako přesný obrázek ve výplni tvaru (nejvěrnější v Google Slides)</label></div>
       <div class="check"><input id="weights" type="checkbox"><label for="weights">Řezy písma v názvu fontu (např. „Inter SemiBold“)</label></div>
       <div class="check"><input id="allpages" type="checkbox"><label for="allpages">Bez node-id převést všechny stránky souboru</label></div>

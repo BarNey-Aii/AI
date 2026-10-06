@@ -1,6 +1,8 @@
 import { Converter } from "./lib/converter.js";
 import { loadFromFigma, parseFigmaUrl } from "./lib/figma.js";
 import { buildPptx } from "./lib/pptx.js";
+import { FontLibrary } from "./lib/fonts.js";
+import { cropImage, normalizeImage } from "./lib/imageops.js";
 
 const $ = (id) => document.getElementById(id);
 const TOKEN_KEY = "figma2pptx.token";
@@ -38,7 +40,16 @@ $("form").addEventListener("submit", async (ev) => {
   try {
     parseFigmaUrl(url);
     const { slides, assets } = await loadFromFigma(url, token, { allPages: $("allpages").checked, onProgress: setStatus });
+    const fonts = new FontLibrary();
+    for (const file of $("fontfiles").files) {
+      try { fonts.add(new Uint8Array(await file.arrayBuffer()), file.name); }
+      catch (e) { message(`${file.name}: ${e.message}`, "warn"); }
+    }
+    const imageFill = assets.imageFill.bind(assets);
+    assets.imageFill = async (ref) => normalizeImage(await imageFill(ref));
+    assets.cropImage = cropImage;
     const conv = new Converter(assets, {
+      fonts: fonts.fonts.length ? fonts : null,
       slideWidthIn: $("width").value ? parseFloat($("width").value) : null,
       rasterizeGradients: $("raster").checked,
       fontWeights: $("weights").checked ? "names" : "bold",
@@ -55,7 +66,11 @@ $("form").addEventListener("submit", async (ev) => {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 60000);
     setStatus(`Hotovo – ${result.slides.length} ${result.slides.length === 1 ? "snímek" : "snímků"} staženo jako ${a.download}.`, true);
-    if (result.warnings.length) message(`Upozornění:\n• ${result.warnings.join("\n• ")}`, "warn");
+    const warnings = [...result.warnings];
+    if (result.missingFonts.length) {
+      warnings.unshift(`Nevložená písma (nahrajte jejich .ttf): ${result.missingFonts.map((f) => `${f.family} ${f.weight}${f.italic ? " italic" : ""}`).join(", ")}`);
+    }
+    if (warnings.length) message(`Upozornění:\n• ${warnings.join("\n• ")}`, "warn");
   } catch (e) {
     console.error(e);
     setStatus("");

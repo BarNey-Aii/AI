@@ -230,15 +230,68 @@
     const frames = figma.currentPage.children.filter((n) => n.visible && ["FRAME", "COMPONENT", "INSTANCE", "SECTION"].indexOf(n.type) >= 0);
     return { nodes: frames, fromSelection: false };
   }
+  function usedFonts(nodes) {
+    const seen = /* @__PURE__ */ new Map();
+    for (const root of nodes) {
+      const texts = root.type === "TEXT" ? [root] : "findAllWithCriteria" in root ? root.findAllWithCriteria({ types: ["TEXT"] }) : [];
+      for (const t of texts) {
+        if (!t.visible) continue;
+        let segs = [];
+        try {
+          segs = t.getStyledTextSegments(["fontName", "fontWeight"]);
+        } catch (e) {
+        }
+        for (const seg of segs) {
+          const italic = /italic|oblique/i.test(seg.fontName.style);
+          const weight = seg.fontWeight || weightOf(seg.fontName.style);
+          const key = `${seg.fontName.family}|${weight}|${italic}`;
+          if (!seen.has(key)) seen.set(key, { family: seg.fontName.family, style: seg.fontName.style, weight, italic });
+        }
+      }
+    }
+    return [...seen.values()];
+  }
   function describe() {
     const { nodes, fromSelection } = slideTargets();
-    figma.ui.postMessage({ type: "info", count: nodes.length, fromSelection, editor: figma.editorType });
+    figma.ui.postMessage({
+      type: "info",
+      count: nodes.length,
+      fromSelection,
+      editor: figma.editorType,
+      fonts: usedFonts(nodes)
+    });
   }
-  figma.on("selectionchange", describe);
+  async function storedFonts() {
+    const out = [];
+    try {
+      for (const key of await figma.clientStorage.keysAsync()) {
+        if (key.indexOf("font:") !== 0) continue;
+        const v = await figma.clientStorage.getAsync(key);
+        if (v && v.bytes) out.push({ key, name: v.name, bytes: v.bytes });
+      }
+    } catch (e) {
+    }
+    return out;
+  }
+  var describeTimer = null;
+  figma.on("selectionchange", () => {
+    if (describeTimer) clearTimeout(describeTimer);
+    describeTimer = setTimeout(describe, 250);
+  });
   figma.ui.onmessage = async (msg) => {
     try {
-      if (msg.type === "ready") describe();
-      else if (msg.type === "collect") {
+      if (msg.type === "ready") {
+        figma.ui.postMessage({ type: "stored-fonts", fonts: await storedFonts() });
+        describe();
+      } else if (msg.type === "font-save") {
+        try {
+          await figma.clientStorage.setAsync(msg.key, { name: msg.name, bytes: msg.bytes });
+        } catch (e) {
+          figma.ui.postMessage({ type: "font-save-failed", name: msg.name, message: String(e && e.message || e) });
+        }
+      } else if (msg.type === "font-remove") {
+        await figma.clientStorage.deleteAsync(msg.key);
+      } else if (msg.type === "collect") {
         const { nodes } = slideTargets();
         nodesById.clear();
         const tree = nodes.map(serialize);

@@ -3,7 +3,10 @@
 <script type="module">
 // Mock of the Figma Plugin API built from the REST fixture, used to run plugin/dist end-to-end.
 const rest = await (await fetch("/tests/fixtures/sample_slide.json")).json();
-const imgBytes = new Uint8Array(await (await fetch("/tests/fixtures/images/img1.png")).arrayBuffer());
+const load = async (u) => new Uint8Array(await (await fetch(u)).arrayBuffer());
+const imgBytes = await load("/tests/fixtures/images/img1.png");
+const images = { img1: imgBytes, photo: await load("/tests/fixtures/images/photo.jpg") };
+const storage = new Map();
 const MIXED = Symbol("mixed");
 const inv = ([[a, c, e], [b, d, f]]) => { const k = a * d - b * c; return [[d / k, -c / k, (c * f - d * e) / k], [-b / k, a / k, (b * e - a * f) / k]]; };
 function gradT(p) {
@@ -69,6 +72,8 @@ function mock(n, parentAbs) {
 }
 const slide = mock(rest.nodes["1:1"].document, null);
 const page = { type: "PAGE", selection: [], findAllWithCriteria: () => [slide] };
+const allTexts = (n) => (n.type === "TEXT" ? [n] : (n.children || []).flatMap(allTexts));
+slide.findAllWithCriteria = () => allTexts(slide);
 slide.parent = page;
 const iframe = document.getElementById("ui");
 let onmessage = null;
@@ -76,7 +81,13 @@ window.figma = {
   mixed: MIXED, editorType: "slides", currentPage: page,
   showUI() {}, on() {}, notify(t) { window.__notified = t; }, closePlugin() {},
   getSlideGrid: () => [[slide]],
-  getImageByHash: () => ({ getBytesAsync: async () => imgBytes }),
+  getImageByHash: (h) => ({ getBytesAsync: async () => images[h] }),
+  clientStorage: {
+    keysAsync: async () => [...storage.keys()],
+    getAsync: async (k) => storage.get(k),
+    setAsync: async (k, v) => { storage.set(k, v); },
+    deleteAsync: async (k) => { storage.delete(k); },
+  },
   getNodeByIdAsync: async () => slide,
   ui: {
     postMessage: (m) => iframe.contentWindow.postMessage({ pluginMessage: m }, "*"),

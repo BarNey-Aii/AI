@@ -27,6 +27,23 @@ Funguje i v běžných Design souborech (vybrané rámce, jinak všechny rámce 
 | Maximálně editovatelný | vše nativně; rozmazání a ořezy se vynechají |
 | Přesná kopie | každý snímek jako jeden obrázek – vzhled 100 %, needitovatelné |
 
+### Písma vložená do PPTX
+Plugin ukáže všechna písma použitá na snímcích. Přes **„+ Přidat soubory písem“** nahrajte jejich
+`.ttf`/`.otf` (např. stažené z Google Fonts – statické řezy, ne „variable“). Plugin si je zapamatuje
+pro příští exporty. Písma se vloží přímo do PPTX (formát EOT `ppt/fonts/*.fntdata`,
+`embedTrueTypeFonts`) – klient je nemusí mít nainstalovaná.
+- Řezy jako SemiBold/Medium se vkládají pod vlastním názvem (např. „Inter SemiBold“), protože PowerPoint
+  zná jen regular/bold/italic.
+- Písma, jejichž licence vkládání zakazuje (fsType), plugin odmítne.
+- Vložená písma zobrazuje PowerPoint (Windows i Mac). Google Slides vložená písma z PPTX nepoužívá –
+  použije vlastní Google Fonts se stejným názvem.
+
+### Textová pole a obrázky
+- Textová pole mají **„Změnit velikost obrazce podle textu“** (`spAutoFit`) – při editaci se přizpůsobí.
+- Jednořádkové texty se nikdy nezalamují (`wrap="none"`); víceřádkové mají rezervu 0,3 em na šířku.
+- Obrázky se ořezávají už při exportu přesně podle Figmy (FILL/FIT/CROP) a vkládají se jako **obrázky**
+  (ne výplň tvaru) včetně zaoblených rohů – nedeformují se v žádné aplikaci. WebP a jiné formáty se převádí na PNG.
+
 Sestavení pluginu ze zdrojů: `npm install && npm run build:plugin`.
 
 ## Webová verze na Netlify (pro Design soubory)

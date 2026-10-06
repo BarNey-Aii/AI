@@ -686,6 +686,141 @@
         ]
        }
       ]
+     },
+     {
+      "id": "2:1",
+      "name": "Fotka",
+      "type": "RECTANGLE",
+      "relativeTransform": [
+       [
+        1,
+        0,
+        1520
+       ],
+       [
+        0,
+        1,
+        560
+       ]
+      ],
+      "size": {
+       "x": 300,
+       "y": 460
+      },
+      "absoluteBoundingBox": {
+       "x": 1620,
+       "y": 610,
+       "width": 300,
+       "height": 460
+      },
+      "cornerRadius": 24,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "imageRef": "photo",
+        "scaleMode": "FILL"
+       }
+      ]
+     },
+     {
+      "id": "2:2",
+      "name": "Know-how",
+      "type": "TEXT",
+      "relativeTransform": [
+       [
+        1,
+        0,
+        1180
+       ],
+       [
+        0,
+        1,
+        520
+       ]
+      ],
+      "size": {
+       "x": 158,
+       "y": 36
+      },
+      "absoluteBoundingBox": {
+       "x": 1280,
+       "y": 570,
+       "width": 158,
+       "height": 36
+      },
+      "characters": "Know-how",
+      "style": {
+       "fontFamily": "Inter",
+       "fontWeight": 600,
+       "fontSize": 30,
+       "textAlignHorizontal": "LEFT",
+       "textAlignVertical": "TOP",
+       "letterSpacing": 0,
+       "lineHeightPx": 36.0,
+       "lineHeightUnit": "PIXELS",
+       "textAutoResize": "NONE"
+      },
+      "fills": [
+       {
+        "type": "SOLID",
+        "color": {
+         "r": 0.05,
+         "g": 0.2,
+         "b": 0.85,
+         "a": 1
+        }
+       }
+      ]
+     },
+     {
+      "id": "2:3",
+      "name": "Cislo 01",
+      "type": "TEXT",
+      "relativeTransform": [
+       [
+        1,
+        0,
+        1180
+       ],
+       [
+        0,
+        1,
+        600
+       ]
+      ],
+      "size": {
+       "x": 50,
+       "y": 58
+      },
+      "absoluteBoundingBox": {
+       "x": 1280,
+       "y": 650,
+       "width": 50,
+       "height": 58
+      },
+      "characters": "01",
+      "style": {
+       "fontFamily": "Inter",
+       "fontWeight": 400,
+       "fontSize": 48,
+       "textAlignHorizontal": "LEFT",
+       "textAlignVertical": "TOP",
+       "letterSpacing": 0,
+       "lineHeightPx": 57.599999999999994,
+       "lineHeightUnit": "PIXELS",
+       "textAutoResize": "NONE"
+      },
+      "fills": [
+       {
+        "type": "SOLID",
+        "color": {
+         "r": 0.05,
+         "g": 0.2,
+         "b": 0.85,
+         "a": 1
+        }
+       }
+      ]
      }
     ]
    }

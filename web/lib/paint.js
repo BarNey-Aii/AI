@@ -158,30 +158,43 @@ function blipFill(rId, alpha, inner = "<a:stretch><a:fillRect/></a:stretch>", sr
   return `<a:blipFill dpi="0" rotWithShape="1"><a:blip r:embed="${rId}">${amt}</a:blip>${src}${inner}</a:blipFill>`;
 }
 
-export function imageFillXml(paint, data, ctx, nw, nh, box, alpha) {
-  let [, , bw, bh] = box;
-  const info = imageInfo(data) || { width: 1, height: 1 };
-  const rId = ctx.embed(data, paint.imageRef);
+// Visible part of the image as fractions to cut from each side (negative = transparent padding).
+export function imageCrop(paint, iw, ih, bw, bh) {
   const mode = paint.scaleMode || "FILL";
-  bw = bw || 1; bh = bh || 1;
-  const ia = info.height ? info.width / info.height : 1, ba = bw / bh;
-  if (mode === "FIT") {
-    if (ia > ba) { const p = (1 - ba / ia) / 2; return blipFill(rId, alpha, `<a:stretch><a:fillRect t="${pct(p)}" b="${pct(p)}"/></a:stretch>`); }
-    const p = (1 - ia / ba) / 2;
-    return blipFill(rId, alpha, `<a:stretch><a:fillRect l="${pct(p)}" r="${pct(p)}"/></a:stretch>`);
-  }
-  if (mode === "TILE") {
-    const s = pct((paint.scalingFactor || 1) * ctx.emu / EMU_PER_PX);
-    return blipFill(rId, alpha, `<a:tile tx="0" ty="0" sx="${s}" sy="${s}" flip="none" algn="tl"/>`);
-  }
+  const ia = ih ? iw / ih : 1, ba = bh ? bw / bh : 1;
   if (mode === "CROP" && paint.imageTransform) {
     const m = paint.imageTransform;
     const x0 = +m[0][2], y0 = +m[1][2], sw = +m[0][0] || 1, sh = +m[1][1] || 1;
-    return blipFill(rId, alpha, undefined, `<a:srcRect l="${pct(x0)}" t="${pct(y0)}" r="${pct(1 - x0 - sw)}" b="${pct(1 - y0 - sh)}"/>`);
+    return { l: x0, t: y0, r: 1 - x0 - sw, b: 1 - y0 - sh };
   }
-  if (ia > ba) { const c = (1 - ba / ia) / 2; return blipFill(rId, alpha, undefined, `<a:srcRect l="${pct(c)}" r="${pct(c)}"/>`); }
+  if (mode === "FIT") {
+    if (ia > ba) { const p = -(ia / ba - 1) / 2; return { l: 0, t: p, r: 0, b: p }; }
+    const p = -(ba / ia - 1) / 2;
+    return { l: p, t: 0, r: p, b: 0 };
+  }
+  if (ia > ba) { const c = (1 - ba / ia) / 2; return { l: c, t: 0, r: c, b: 0 }; }
   const c = (1 - ia / ba) / 2;
-  return blipFill(rId, alpha, undefined, `<a:srcRect t="${pct(c)}" b="${pct(c)}"/>`);
+  return { l: 0, t: c, r: 0, b: c };
+}
+
+export function imageFillXml(paint, data, ctx, nw, nh, box, alpha) {
+  let [, , bw, bh] = box;
+  bw = bw || 1; bh = bh || 1;
+  const info = imageInfo(data) || { width: 1, height: 1 };
+  if ((paint.scaleMode || "FILL") === "TILE") {
+    const s = pct((paint.scalingFactor || 1) * ctx.emu / EMU_PER_PX);
+    return blipFill(ctx.embed(data, paint.imageRef), alpha, `<a:tile tx="0" ty="0" sx="${s}" sy="${s}" flip="none" algn="tl"/>`);
+  }
+  const crop = imageCrop(paint, info.width, info.height, bw, bh);
+  if (ctx.embedCropped) {
+    // The crop is baked into the picture itself, so every app shows it identically.
+    return blipFill(ctx.embedCropped(data, paint.imageRef, crop, bw, bh), alpha);
+  }
+  const rId = ctx.embed(data, paint.imageRef);
+  if (crop.l < 0 || crop.t < 0) {
+    return blipFill(rId, alpha, `<a:stretch><a:fillRect l="${pct(-crop.l)}" t="${pct(-crop.t)}" r="${pct(-crop.r)}" b="${pct(-crop.b)}"/></a:stretch>`);
+  }
+  return blipFill(rId, alpha, undefined, `<a:srcRect l="${pct(crop.l)}" t="${pct(crop.t)}" r="${pct(crop.r)}" b="${pct(crop.b)}"/>`);
 }
 
 // One Figma paint -> one DrawingML fill element (or null).

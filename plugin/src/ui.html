@@ -20,6 +20,11 @@ button:disabled { opacity: .5; cursor: default; }
 .msg { margin-top: 10px; padding: 8px 10px; border-radius: 6px; white-space: pre-wrap; max-height: 140px; overflow: auto; }
 .msg.err { color: var(--err); background: rgba(198,40,40,.08); } .msg.warn { background: rgba(230,160,0,.12); }
 small { color: var(--muted); display: block; margin-top: 3px; }
+.fonts { border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; max-height: 130px; overflow: auto; }
+.fonts div { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+.ok-f { color: var(--ok); } .miss-f { color: var(--err); } .fonts a { color: inherit; }
+.filebtn { display: inline-block; margin-top: 6px; color: var(--figma-color-text-brand, #5b4bff); cursor: pointer; font-weight: 600; }
+#fontmsg { color: var(--err); white-space: pre-wrap; margin-top: 4px; }
 </style></head>
 <body>
 <h1>Export do PPTX</h1>
@@ -45,6 +50,13 @@ small { color: var(--muted); display: block; margin-top: 3px; }
 
 <div class="check"><input id="raster" type="checkbox"><label for="raster">Gradienty jako přesný obrázek ve výplni (doporučeno pro Google Slides)</label></div>
 <div class="check"><input id="weights" type="checkbox"><label for="weights">Řez písma v názvu fontu („Inter SemiBold“)</label></div>
+
+<label class="f">Písma – vloží se do PPTX</label>
+<div id="fonts" class="fonts">–</div>
+<label class="filebtn" for="fontfiles">+ Přidat soubory písem (.ttf / .otf)</label>
+<input id="fontfiles" type="file" accept=".ttf,.otf" multiple hidden>
+<div class="check"><input id="embed" type="checkbox" checked><label for="embed">Vložit písma do souboru (klient je nemusí mít nainstalovaná)</label></div>
+<div id="fontmsg"></div>
 
 <label class="f" for="name">Název souboru</label>
 <input id="name" type="text" value="prezentace">
